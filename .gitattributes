@@ -1,0 +1,6 @@
+* text=auto
+*.md text eol=lf
+*.java text eol=lf
+*.csv text eol=lf
+*.sh text eol=lf
+*.cmd text eol=crlf
