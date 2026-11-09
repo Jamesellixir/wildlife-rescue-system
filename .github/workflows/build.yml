@@ -1,0 +1,33 @@
+name: Java build
+
+on: [push, pull_request]
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    name: Verify on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          persist-credentials: false
+      - uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Compile, test and package (Linux)
+        if: runner.os == 'Linux'
+        run: ./mvnw --batch-mode --no-transfer-progress clean verify
+      - name: Compile, test and package (Windows)
+        if: runner.os == 'Windows'
+        run: ./mvnw.cmd --batch-mode --no-transfer-progress clean verify
+      - name: Launch packaged JAR
+        shell: bash
+        run: java -jar target/wildlife-rescue-system.jar < /dev/null

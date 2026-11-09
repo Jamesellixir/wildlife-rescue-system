@@ -4,7 +4,7 @@ A Java console application for recording wildlife rescue incidents, calculating 
 
 ## Project status
 
-Planning started on 8 November 2026. The UML design and use case descriptions were completed on 9 November. Implementation is scheduled to begin after project setup.
+Planning started on 8 November 2026. The UML design and use case descriptions were completed on 9 November. The Java project and build checks are ready for implementation.
 
 ## Planned features
 
@@ -21,8 +21,12 @@ Planning started on 8 November 2026. The UML design and use case descriptions we
 - [Development schedule](docs/schedule.md)
 - [UML diagrams and use case descriptions](docs/design/README.md)
 
-## Planned setup
+## Build and test
 
-Java 17 and Maven, with JUnit tests and Apache Commons CSV. Build and run instructions will be added with the working application.
+Install a Java 17 JDK and set JAVA_HOME to its installation folder. The Maven Wrapper downloads Maven 3.9.9 on the first run.
+
+On Windows, run `.\mvnw.cmd clean verify`. On macOS or Linux, run `./mvnw clean verify`.
+
+The build compiles the project, runs the JUnit setup test and creates `target/wildlife-rescue-system.jar`. Run `java -jar target/wildlife-rescue-system.jar` to see the starter message.
 
 The interface will use a numbered console menu. Sample records will use fictional names and contact details.
