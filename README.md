@@ -4,7 +4,7 @@ A Java console application for recording wildlife rescue incidents, calculating 
 
 ## Project status
 
-Planning started on 8 November 2026. The application has not been implemented yet.
+Planning started on 8 November 2026. The UML design and use case descriptions were completed on 9 November. Implementation is scheduled to begin after project setup.
 
 ## Planned features
 
@@ -19,6 +19,7 @@ Planning started on 8 November 2026. The application has not been implemented ye
 - [Project plan](docs/project-plan.md)
 - [Requirements and acceptance criteria](docs/requirements.md)
 - [Development schedule](docs/schedule.md)
+- [UML diagrams and use case descriptions](docs/design/README.md)
 
 ## Planned setup
 
