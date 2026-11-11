@@ -3,6 +3,8 @@ package ui;
 import java.io.PrintStream;
 import java.util.EnumSet;
 import java.util.Locale;
+import java.util.Arrays;
+import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Scanner;
 import java.util.Set;
@@ -16,18 +18,22 @@ import model.Equipment;
 import model.Mammal;
 import model.Reptile;
 import model.RescueIncident;
+import model.RescueTeam;
 import model.Skill;
 import service.IncidentManager;
+import service.TeamRegistry;
 
 public final class ConsoleMenu {
     private final Scanner input;
     private final PrintStream output;
     private final IncidentManager manager;
+    private final TeamRegistry teams;
 
     public ConsoleMenu(Scanner input, PrintStream output, IncidentManager manager) {
         this.input = input;
         this.output = output;
         this.manager = manager;
+        this.teams = new TeamRegistry(manager);
     }
 
     public void run() {
@@ -37,18 +43,82 @@ public final class ConsoleMenu {
             while (true) {
                 output.println("\n1. Report an incident");
                 output.println("2. View incidents");
+                output.println("3. Register a rescue team");
+                output.println("4. View teams and change availability");
                 output.println("0. Exit");
                 switch (readLine("Choice")) {
                     case "1" -> reportIncident();
                     case "2" -> viewIncidents();
+                    case "3" -> registerTeam();
+                    case "4" -> viewTeams();
                     case "0" -> {
                         return;
                     }
-                    default -> output.println("Choose 0, 1 or 2.");
+                    default -> output.println("Choose a number from 0 to 4.");
                 }
             }
         } catch (NoSuchElementException endOfInput) {
             output.println("\nInput ended. Closing the console.");
+        }
+    }
+
+    private void registerTeam() {
+        String id = readRequired("Team ID");
+        if (teams.findTeam(id).isPresent()) {
+            output.println("A team with this ID already exists.");
+            return;
+        }
+        String name = readRequired("Team name");
+        List<String> members;
+        while (true) {
+            members = Arrays.stream(readLine("Member names separated by commas").split(",", -1))
+                    .map(String::strip).toList();
+            if (members.stream().allMatch(member -> !member.isEmpty() && !member.contains("|"))) {
+                break;
+            }
+            output.println("Enter member names without blank entries or |.");
+        }
+        Set<AnimalCategory> categories;
+        do {
+            categories = readMultiple("Supported animals", AnimalCategory.class);
+            if (categories.isEmpty()) output.println("Select at least one animal category.");
+        } while (categories.isEmpty());
+        Set<Skill> skills = readMultiple("Team skills", Skill.class);
+        Set<Equipment> equipment = readMultiple("Team equipment", Equipment.class);
+        String zone = readRequired("Base zone");
+        int capacity = readNumber("Maximum workload", 1, Integer.MAX_VALUE);
+        boolean available = readYesNo("Available (y/n)");
+        teams.register(new RescueTeam(id, name, members, categories, skills, equipment, zone, available, capacity));
+        output.println("Team registered: " + id);
+    }
+
+    private void viewTeams() {
+        if (teams.listTeams().isEmpty()) {
+            output.println("No teams registered.");
+            return;
+        }
+        for (RescueTeam team : teams.listTeams()) {
+            int active = teams.activeCount(team.id());
+            output.printf("%s | %s | %s | %d/%d active%n", team.id(), team.name(),
+                    label(team.status(active)), active, team.capacity());
+            output.println("Members: " + String.join(", ", team.members()));
+            output.println("Animals: " + labels(team.categories()));
+            output.println("Skills: " + labels(team.skills()));
+            output.println("Equipment: " + labels(team.equipment()));
+            output.println("Base zone: " + team.baseZone());
+        }
+        String id = readLine("Team ID to change availability (Enter to return)");
+        if (id.isEmpty()) return;
+        if (teams.findTeam(id).isEmpty()) {
+            output.println("No team found for that ID.");
+            return;
+        }
+        boolean available = readYesNo("Available (y/n)");
+        try {
+            teams.changeAvailability(id, available);
+            output.println("Availability updated.");
+        } catch (IllegalStateException invalid) {
+            output.println(invalid.getMessage());
         }
     }
 
