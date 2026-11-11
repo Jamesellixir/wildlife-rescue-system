@@ -31,4 +31,20 @@ class TeamRegistryTest {
         assertTrue(registry.changeAvailability("T1", true).operationallyAvailable());
         assertThrows(IllegalArgumentException.class, () -> registry.changeAvailability("missing", false));
     }
+    @Test
+    void rejectsUnavailableWhenTeamHasActiveIncident() throws Exception {
+        IncidentManager manager = new IncidentManager();
+        TeamRegistry registry = new TeamRegistry(manager);
+        registry.register(team());
+        RescueIncident incident = manager.reportIncident(new Bird(Condition.INJURED, 1), "Park", "North",
+                false, EnvironmentalRisk.LOW, Set.of(), Set.of(), "Alex", "alex@example.test");
+        var field = IncidentManager.class.getDeclaredField("incidents");
+        field.setAccessible(true);
+        @SuppressWarnings("unchecked")
+        var stored = (java.util.Map<java.util.UUID, RescueIncident>) field.get(manager);
+        stored.put(incident.id(), incident.withAssignment("T1"));
+        assertEquals(1, registry.activeCount("T1"));
+        assertThrows(IllegalStateException.class, () -> registry.changeAvailability("T1", false));
+        assertTrue(registry.findTeam("T1").orElseThrow().operationallyAvailable());
+    }
 }
