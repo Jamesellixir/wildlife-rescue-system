@@ -25,6 +25,7 @@ import model.Skill;
 import service.IncidentManager;
 import service.TeamRegistry;
 import service.PriorityCalculator;
+import service.TeamMatcher;
 
 public final class ConsoleMenu {
     private final Scanner input;
@@ -48,16 +49,18 @@ public final class ConsoleMenu {
                 output.println("2. View incidents");
                 output.println("3. Register a rescue team");
                 output.println("4. View teams and change availability");
+                output.println("5. Find suitable teams");
                 output.println("0. Exit");
                 switch (readLine("Choice")) {
                     case "1" -> reportIncident();
                     case "2" -> viewIncidents();
                     case "3" -> registerTeam();
                     case "4" -> viewTeams();
+                    case "5" -> findTeams();
                     case "0" -> {
                         return;
                     }
-                    default -> output.println("Choose a number from 0 to 4.");
+                    default -> output.println("Choose a number from 0 to 5.");
                 }
             }
         } catch (NoSuchElementException endOfInput) {
@@ -198,6 +201,38 @@ public final class ConsoleMenu {
         output.println("Reporter contact: " + incident.reporterContact());
         output.println("Status: " + label(incident.status()));
         showPriority(incident);
+    }
+
+    private void findTeams() {
+        String value = readLine("Pending incident ID");
+        UUID id;
+        try {
+            id = UUID.fromString(value);
+        } catch (IllegalArgumentException invalid) {
+            output.println("Invalid incident ID.");
+            return;
+        }
+        var incident = manager.findIncident(id);
+        if (incident.isEmpty()) {
+            output.println("No incident found for that ID.");
+            return;
+        }
+        if (incident.get().status() != IncidentStatus.PENDING_ASSIGNMENT) {
+            output.println("The incident is not pending assignment.");
+            return;
+        }
+        var result = new TeamMatcher().match(incident.get(), teams.listTeams(), manager.listIncidents());
+        if (result.candidates().isEmpty()) output.println("No suitable teams found.");
+        for (var candidate : result.candidates()) {
+            var team = candidate.team();
+            output.printf("%s | %s | %s | required skills and equipment available | %d of %d places occupied%n",
+                    team.id(), team.name(), candidate.sameZone() ? "same zone" : "different zone",
+                    candidate.activeCount(), team.capacity());
+        }
+        for (var rejection : result.rejected()) {
+            output.printf("%s | not suitable: %s%n", rejection.team().id(), String.join(", ", rejection.reasons()));
+        }
+        output.println("Suggestions do not assign or reserve a team.");
     }
 
     private void showPriority(RescueIncident incident) {
