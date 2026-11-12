@@ -4,6 +4,7 @@ import java.io.PrintStream;
 import java.util.EnumSet;
 import java.util.Locale;
 import java.util.Arrays;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Scanner;
@@ -13,6 +14,7 @@ import model.Animal;
 import model.AnimalCategory;
 import model.Bird;
 import model.Condition;
+import model.IncidentStatus;
 import model.EnvironmentalRisk;
 import model.Equipment;
 import model.Mammal;
@@ -22,6 +24,7 @@ import model.RescueTeam;
 import model.Skill;
 import service.IncidentManager;
 import service.TeamRegistry;
+import service.PriorityCalculator;
 
 public final class ConsoleMenu {
     private final Scanner input;
@@ -144,10 +147,13 @@ public final class ConsoleMenu {
                 risk, skills, equipment, reporterName, reporterContact);
         output.println("Incident recorded. ID: " + incident.id());
         output.println("Status: " + label(incident.status()));
+        showPriority(incident);
     }
 
     private void viewIncidents() {
-        var incidents = manager.listIncidents();
+        var incidents = new ArrayList<>(manager.pendingInPriorityOrder());
+        manager.listIncidents().stream().filter(i -> i.status() != IncidentStatus.PENDING_ASSIGNMENT)
+                .forEach(incidents::add);
         if (incidents.isEmpty()) {
             output.println("No incidents recorded.");
             return;
@@ -191,6 +197,14 @@ public final class ConsoleMenu {
         output.println("Reporter name: " + incident.reporterName());
         output.println("Reporter contact: " + incident.reporterContact());
         output.println("Status: " + label(incident.status()));
+        showPriority(incident);
+    }
+
+    private void showPriority(RescueIncident incident) {
+        var priority = new PriorityCalculator().calculate(incident);
+        output.printf("Priority: %s (score %d)%n", label(priority.level()), priority.score());
+        output.printf("Score breakdown: condition %d, immediate danger %d, animal count %d, environmental risk %d%n",
+                priority.conditionPoints(), priority.dangerPoints(), priority.countPoints(), priority.riskPoints());
     }
 
     private String readLine(String prompt) {

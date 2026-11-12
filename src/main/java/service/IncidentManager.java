@@ -11,6 +11,7 @@ import model.Animal;
 import model.EnvironmentalRisk;
 import model.Equipment;
 import model.RescueIncident;
+import model.IncidentStatus;
 import model.Skill;
 
 public final class IncidentManager {
@@ -33,6 +34,14 @@ public final class IncidentManager {
 
     public List<RescueIncident> listIncidents() {
         return List.copyOf(incidents.values());
+    }
+
+    public List<RescueIncident> pendingInPriorityOrder() {
+        PriorityCalculator calculator = new PriorityCalculator();
+        return incidents.values().stream()
+                .filter(incident -> incident.status() == IncidentStatus.PENDING_ASSIGNMENT)
+                .sorted(calculator.order())
+                .toList();
     }
 
     public Optional<RescueIncident> findIncident(UUID id) {
