@@ -11,13 +11,14 @@ import model.Animal;
 import model.EnvironmentalRisk;
 import model.Equipment;
 import model.RescueIncident;
+import model.RescueTeam;
 import model.IncidentStatus;
 import model.Skill;
 
 public final class IncidentManager {
     private final Map<UUID, RescueIncident> incidents = new LinkedHashMap<>();
 
-    public RescueIncident reportIncident(Animal animal, String location, String zone, boolean immediateDanger,
+    public synchronized RescueIncident reportIncident(Animal animal, String location, String zone, boolean immediateDanger,
                                          EnvironmentalRisk risk, Set<Skill> requiredSkills,
                                          Set<Equipment> requiredEquipment, String reporterName,
                                          String reporterContact) {
@@ -32,11 +33,11 @@ public final class IncidentManager {
         return incident;
     }
 
-    public List<RescueIncident> listIncidents() {
+    public synchronized List<RescueIncident> listIncidents() {
         return List.copyOf(incidents.values());
     }
 
-    public List<RescueIncident> pendingInPriorityOrder() {
+    public synchronized List<RescueIncident> pendingInPriorityOrder() {
         PriorityCalculator calculator = new PriorityCalculator();
         return incidents.values().stream()
                 .filter(incident -> incident.status() == IncidentStatus.PENDING_ASSIGNMENT)
@@ -44,7 +45,27 @@ public final class IncidentManager {
                 .toList();
     }
 
-    public Optional<RescueIncident> findIncident(UUID id) {
+    public synchronized RescueIncident assign(UUID incidentId, String teamId, TeamRegistry registry) {
+        if (registry == null || !registry.belongsTo(this)) {
+            throw new IllegalArgumentException("Team registry does not belong to this incident manager.");
+        }
+        RescueIncident incident = incidents.get(incidentId);
+        if (incident == null) throw new IllegalArgumentException("No incident found for that ID.");
+        if (incident.status() != IncidentStatus.PENDING_ASSIGNMENT) {
+            throw new IllegalStateException("The incident is not pending assignment.");
+        }
+        RescueTeam team = registry.findTeam(teamId)
+                .orElseThrow(() -> new IllegalArgumentException("No team found for that ID."));
+        var result = new TeamMatcher().match(incident, List.of(team), List.copyOf(incidents.values()));
+        if (result.candidates().isEmpty()) {
+            throw new IllegalStateException("Team is not suitable: " + String.join(", ", result.rejected().get(0).reasons()));
+        }
+        RescueIncident assigned = incident.withAssignment(team.id());
+        incidents.put(incidentId, assigned);
+        return assigned;
+    }
+
+    public synchronized Optional<RescueIncident> findIncident(UUID id) {
         return Optional.ofNullable(incidents.get(id));
     }
 }

@@ -49,7 +49,7 @@ public final class ConsoleMenu {
                 output.println("2. View incidents");
                 output.println("3. Register a rescue team");
                 output.println("4. View teams and change availability");
-                output.println("5. Find suitable teams");
+                output.println("5. Find suitable teams and assign a team");
                 output.println("0. Exit");
                 switch (readLine("Choice")) {
                     case "1" -> reportIncident();
@@ -233,6 +233,16 @@ public final class ConsoleMenu {
             output.printf("%s | not suitable: %s%n", rejection.team().id(), String.join(", ", rejection.reasons()));
         }
         output.println("Suggestions do not assign or reserve a team.");
+        if (result.candidates().isEmpty()) return;
+        String teamId = readLine("Team ID to assign (Enter to return)");
+        if (teamId.isEmpty()) return;
+        try {
+            var assigned = manager.assign(id, teamId, teams);
+            output.printf("Incident %s assigned to team %s. Active workload: %d of %d.%n",
+                    assigned.id(), teamId, teams.activeCount(teamId), teams.findTeam(teamId).orElseThrow().capacity());
+        } catch (IllegalArgumentException | IllegalStateException invalid) {
+            output.println(invalid.getMessage());
+        }
     }
 
     private void showPriority(RescueIncident incident) {
