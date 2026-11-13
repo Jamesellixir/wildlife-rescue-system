@@ -65,6 +65,14 @@ public final class IncidentManager {
         return assigned;
     }
 
+    public synchronized RescueIncident updateStatus(UUID incidentId, IncidentStatus nextStatus) {
+        RescueIncident current = incidents.get(incidentId);
+        if (current == null) throw new IllegalArgumentException("No incident found for that ID.");
+        RescueIncident updated = current.withStatus(nextStatus);
+        incidents.put(incidentId, updated);
+        return updated;
+    }
+
     public synchronized Optional<RescueIncident> findIncident(UUID id) {
         return Optional.ofNullable(incidents.get(id));
     }

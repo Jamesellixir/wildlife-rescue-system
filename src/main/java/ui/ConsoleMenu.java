@@ -50,6 +50,7 @@ public final class ConsoleMenu {
                 output.println("3. Register a rescue team");
                 output.println("4. View teams and change availability");
                 output.println("5. Find suitable teams and assign a team");
+                output.println("6. Update incident status");
                 output.println("0. Exit");
                 switch (readLine("Choice")) {
                     case "1" -> reportIncident();
@@ -57,10 +58,11 @@ public final class ConsoleMenu {
                     case "3" -> registerTeam();
                     case "4" -> viewTeams();
                     case "5" -> findTeams();
+                    case "6" -> updateStatus();
                     case "0" -> {
                         return;
                     }
-                    default -> output.println("Choose a number from 0 to 5.");
+                    default -> output.println("Choose a number from 0 to 6.");
                 }
             }
         } catch (NoSuchElementException endOfInput) {
@@ -241,6 +243,35 @@ public final class ConsoleMenu {
             output.printf("Incident %s assigned to team %s. Active workload: %d of %d.%n",
                     assigned.id(), teamId, teams.activeCount(teamId), teams.findTeam(teamId).orElseThrow().capacity());
         } catch (IllegalArgumentException | IllegalStateException invalid) {
+            output.println(invalid.getMessage());
+        }
+    }
+
+    private void updateStatus() {
+        String value = readLine("Incident ID");
+        UUID id;
+        try {
+            id = UUID.fromString(value);
+        } catch (IllegalArgumentException invalid) {
+            output.println("Invalid incident ID.");
+            return;
+        }
+        var incident = manager.findIncident(id);
+        if (incident.isEmpty()) {
+            output.println("No incident found for that ID.");
+            return;
+        }
+        output.println("1. In progress");
+        output.println("2. Completed");
+        int choice = readNumber("New status", 1, 2);
+        IncidentStatus next = choice == 1 ? IncidentStatus.IN_PROGRESS : IncidentStatus.COMPLETED;
+        try {
+            var updated = manager.updateStatus(id, next);
+            output.printf("Incident %s status: %s.%n", updated.id(), label(updated.status()));
+            if (next == IncidentStatus.COMPLETED) {
+                output.println("One team capacity place has been released.");
+            }
+        } catch (IllegalStateException invalid) {
             output.println(invalid.getMessage());
         }
     }
