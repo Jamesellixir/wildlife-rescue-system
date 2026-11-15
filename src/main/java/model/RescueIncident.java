@@ -45,6 +45,20 @@ public final class RescueIncident {
         this.assignedTeamId = assignedTeamId;
     }
 
+    public static RescueIncident restore(UUID id, Instant reportedAt, Animal animal, String location, String zone,
+                                         boolean immediateDanger, EnvironmentalRisk risk, Set<Skill> requiredSkills,
+                                         Set<Equipment> requiredEquipment, String reporterName, String reporterContact,
+                                         IncidentStatus status, String assignedTeamId) {
+        ModelValidation.required(status, "Incident status");
+        if (status == IncidentStatus.PENDING_ASSIGNMENT) {
+            if (assignedTeamId != null) throw new IllegalArgumentException("Pending incident cannot have an assigned team.");
+        } else {
+            assignedTeamId = ModelValidation.text(assignedTeamId, "Assigned team ID");
+        }
+        return new RescueIncident(id, reportedAt, animal, location, zone, immediateDanger, risk,
+                requiredSkills, requiredEquipment, reporterName, reporterContact, status, assignedTeamId);
+    }
+
     public RescueIncident withAssignment(String teamId) {
         if (status != IncidentStatus.PENDING_ASSIGNMENT) {
             throw new IllegalStateException("Only pending incidents can be assigned.");

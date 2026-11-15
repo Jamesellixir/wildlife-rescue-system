@@ -30,4 +30,4 @@ jobs:
         run: ./mvnw.cmd --batch-mode --no-transfer-progress clean verify
       - name: Launch packaged JAR
         shell: bash
-        run: java -jar target/wildlife-rescue-system.jar < /dev/null
+        run: java -jar target/wildlife-rescue-system.jar --init < /dev/null

@@ -2,6 +2,7 @@ package service;
 
 import java.time.Instant;
 import java.util.LinkedHashMap;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -14,9 +15,29 @@ import model.RescueIncident;
 import model.RescueTeam;
 import model.IncidentStatus;
 import model.Skill;
+import storage.FileManager;
 
 public final class IncidentManager {
     private final Map<UUID, RescueIncident> incidents = new LinkedHashMap<>();
+    private final FileManager store;
+    private final List<RescueTeam> initialTeams;
+
+    public IncidentManager() { this.store = null; this.initialTeams = List.of(); }
+    public IncidentManager(FileManager store, FileManager.Loaded loaded) {
+        this.store = java.util.Objects.requireNonNull(store);
+        this.initialTeams = List.copyOf(loaded.teams());
+        for (var incident : loaded.incidents()) incidents.put(incident.id(), incident);
+    }
+    FileManager store() { return store; }
+    List<RescueTeam> initialTeams() { return initialTeams; }
+    public boolean isPersistent() { return store != null; }
+    private void saveReplacement(RescueIncident candidate) {
+        if (store == null) return;
+        List<RescueIncident> snapshot = new ArrayList<>(incidents.values());
+        snapshot.removeIf(i -> i.id().equals(candidate.id()));
+        snapshot.add(candidate);
+        store.saveIncidents(snapshot);
+    }
 
     public synchronized RescueIncident reportIncident(Animal animal, String location, String zone, boolean immediateDanger,
                                          EnvironmentalRisk risk, Set<Skill> requiredSkills,
@@ -29,6 +50,7 @@ public final class IncidentManager {
 
         RescueIncident incident = new RescueIncident(id, Instant.now(), animal, location, zone,
                 immediateDanger, risk, requiredSkills, requiredEquipment, reporterName, reporterContact);
+        saveReplacement(incident);
         incidents.put(id, incident);
         return incident;
     }
@@ -61,6 +83,7 @@ public final class IncidentManager {
             throw new IllegalStateException("Team is not suitable: " + String.join(", ", result.rejected().get(0).reasons()));
         }
         RescueIncident assigned = incident.withAssignment(team.id());
+        saveReplacement(assigned);
         incidents.put(incidentId, assigned);
         return assigned;
     }
@@ -69,6 +92,7 @@ public final class IncidentManager {
         RescueIncident current = incidents.get(incidentId);
         if (current == null) throw new IllegalArgumentException("No incident found for that ID.");
         RescueIncident updated = current.withStatus(nextStatus);
+        saveReplacement(updated);
         incidents.put(incidentId, updated);
         return updated;
     }

@@ -1,6 +1,7 @@
 package service;
 
 import java.util.LinkedHashMap;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -15,18 +16,29 @@ public final class TeamRegistry {
 
     public TeamRegistry(IncidentManager incidents) {
         this.incidents = Objects.requireNonNull(incidents);
+        for (var team : incidents.initialTeams()) teams.put(team.id(), team);
     }
 
     boolean belongsTo(IncidentManager manager) {
         return incidents == manager;
     }
 
+    private void saveReplacement(RescueTeam candidate) {
+        if (incidents.store() == null) return;
+        var snapshot = new ArrayList<>(teams.values());
+        snapshot.removeIf(t -> t.id().equals(candidate.id()));
+        snapshot.add(candidate);
+        incidents.store().saveTeams(snapshot);
+    }
+
     public void register(RescueTeam team) {
         synchronized (incidents) {
             Objects.requireNonNull(team);
-            if (teams.putIfAbsent(team.id(), team) != null) {
+            if (teams.containsKey(team.id())) {
                 throw new IllegalArgumentException("A team with this ID already exists.");
             }
+            saveReplacement(team);
+            teams.put(team.id(), team);
         }
     }
 
@@ -59,6 +71,7 @@ public final class TeamRegistry {
                 throw new IllegalStateException("Complete active incidents before marking the team unavailable.");
             }
             RescueTeam updated = team.withAvailability(available);
+            saveReplacement(updated);
             teams.put(id, updated);
             return updated;
         }

@@ -1,6 +1,7 @@
 package ui;
 
 import java.io.PrintStream;
+import java.io.UncheckedIOException;
 import java.util.EnumSet;
 import java.util.Locale;
 import java.util.Arrays;
@@ -42,7 +43,7 @@ public final class ConsoleMenu {
 
     public void run() {
         output.println("Wildlife Rescue System");
-        output.println("Reports are kept for this session.");
+        output.println(manager.isPersistent() ? "Data is saved in the data directory." : "Reports are kept for this session.");
         try {
             while (true) {
                 output.println("\n1. Report an incident");
@@ -52,6 +53,7 @@ public final class ConsoleMenu {
                 output.println("5. Find suitable teams and assign a team");
                 output.println("6. Update incident status");
                 output.println("0. Exit");
+                try {
                 switch (readLine("Choice")) {
                     case "1" -> reportIncident();
                     case "2" -> viewIncidents();
@@ -63,6 +65,9 @@ public final class ConsoleMenu {
                         return;
                     }
                     default -> output.println("Choose a number from 0 to 6.");
+                }
+                } catch (UncheckedIOException failed) {
+                    output.println("Save failed: " + failed.getMessage());
                 }
             }
         } catch (NoSuchElementException endOfInput) {

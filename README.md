@@ -4,7 +4,7 @@ A Java console application for recording wildlife rescue incidents, calculating 
 
 ## Project status
 
-Planning started on 8 November 2026. The UML design and use case descriptions were completed on 9 November. The Java project and build checks are ready for implementation.
+The console supports incident reports, team registration, matching, assignment, progress updates and local CSV storage. Reports and concurrent matching are planned.
 
 ## Planned features
 
@@ -27,6 +27,6 @@ Install a Java 17 JDK and set JAVA_HOME to its installation folder. The Maven Wr
 
 On Windows, run `.\mvnw.cmd clean verify`. On macOS or Linux, run `./mvnw clean verify`.
 
-The build compiles the project, runs the JUnit setup test and creates `target/wildlife-rescue-system.jar`. Run `java -jar target/wildlife-rescue-system.jar` to see the starter message.
+The build runs the JUnit tests and creates `target/wildlife-rescue-system.jar`. On first use, run `java -jar target/wildlife-rescue-system.jar --init` from the chosen working directory. This creates `data/teams.csv` and `data/incidents.csv`. Use `java -jar target/wildlife-rescue-system.jar` on later runs. Start only one instance for a data directory. If either data file is missing or damaged, the application reports an error without replacing it.
 
-The interface will use a numbered console menu. Sample records will use fictional names and contact details.
+The console uses numbered menus. Use fictional names and contact details in examples.
