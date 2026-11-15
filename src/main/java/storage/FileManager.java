@@ -19,20 +19,24 @@ import org.apache.commons.csv.*;
 public final class FileManager implements AutoCloseable {
     private static final String[] TEAM_HEADERS = {"id", "name", "members", "categories", "skills", "equipment", "base_zone", "available", "capacity"};
     private static final String[] INCIDENT_HEADERS = {"id", "reported_at", "category", "condition", "count", "location", "zone", "risk", "danger", "skills", "equipment", "reporter_name", "reporter_contact", "status", "team_id"};
+    private static final Set<Path> OPEN_DIRECTORIES = new HashSet<>();
     private static final CSVFormat FORMAT = CSVFormat.RFC4180.builder().setIgnoreEmptyLines(false).get();
     private final Path directory;
     private final FileChannel channel;
     private final FileLock lock;
+    private boolean closed;
     public record Loaded(List<RescueTeam> teams, List<RescueIncident> incidents) { }
 
     private FileManager(Path directory, FileChannel channel, FileLock lock) {
         this.directory = directory; this.channel = channel; this.lock = lock;
     }
 
-    public static FileManager open(Path directory, boolean initialize) throws IOException {
+    public static synchronized FileManager open(Path directory, boolean initialize) throws IOException {
         Path dir = directory.toAbsolutePath().normalize();
         if (initialize) Files.createDirectories(dir);
         if (!Files.isDirectory(dir)) throw new IOException("Data directory does not exist. Run with --init to create it.");
+        dir = dir.toRealPath();
+        if (OPEN_DIRECTORIES.contains(dir)) throw new IOException("Another application instance is using the data directory.");
         FileChannel channel = FileChannel.open(dir.resolve(".writer.lock"), StandardOpenOption.CREATE, StandardOpenOption.WRITE);
         FileLock lock;
         try { lock = channel.tryLock(); }
@@ -40,6 +44,7 @@ public final class FileManager implements AutoCloseable {
         catch (IOException | RuntimeException e) { channel.close(); throw e; }
         if (lock == null) { channel.close(); throw new IOException("Another application instance is using the data directory."); }
         FileManager store = new FileManager(dir, channel, lock);
+        OPEN_DIRECTORIES.add(dir);
         try {
             Path teams = dir.resolve("teams.csv"), incidents = dir.resolve("incidents.csv");
             if (initialize) {
@@ -157,5 +162,15 @@ public final class FileManager implements AutoCloseable {
         } catch (IOException e) { throw new UncheckedIOException("Could not save " + filename + "; change not accepted", e); }
         finally { if (temp != null) try { Files.deleteIfExists(temp); } catch (IOException ignored) { } }
     }
-    @Override public void close() throws IOException { try { lock.release(); } finally { channel.close(); } }
+    @Override public void close() throws IOException {
+        synchronized (FileManager.class) {
+            if (closed) return;
+            closed = true;
+            try { lock.release(); }
+            finally {
+                try { channel.close(); }
+                finally { OPEN_DIRECTORIES.remove(directory); }
+            }
+        }
+    }
 }

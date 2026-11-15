@@ -57,8 +57,10 @@ class FileManagerTest {
             var ex=assertThrows(IOException.class,()->FileManager.open(dir,false));assertTrue(ex.getMessage().contains("Another application instance"));
             String java=Path.of(System.getProperty("java.home"),"bin","java").toString();
             Process p=new ProcessBuilder(java,"-cp",System.getProperty("java.class.path"),"app.Main").directory(temp.toFile()).redirectErrorStream(true).start();
-            assertTrue(p.waitFor(20,TimeUnit.SECONDS));String text=new String(p.getInputStream().readAllBytes(),StandardCharsets.UTF_8);
-            assertNotEquals(0,p.exitValue());assertTrue(text.contains("Another application instance"),text);
+            try {
+                assertTrue(p.waitFor(20,TimeUnit.SECONDS));String text=new String(p.getInputStream().readAllBytes(),StandardCharsets.UTF_8);
+                assertNotEquals(0,p.exitValue());assertTrue(text.contains("Another application instance"),text);
+            } finally { if (p.isAlive()) p.destroyForcibly(); }
         }
         try(var next=FileManager.open(dir,false)){assertNotNull(next.load());}
     }
@@ -104,5 +106,24 @@ class FileManagerTest {
         try(var store=FileManager.open(dir,false)){var ex=assertThrows(IllegalArgumentException.class,store::load);assertTrue(ex.getMessage().contains("duplicate team ID"));}
         Files.writeString(teams,"wrong,header\r\n");
         try(var store=FileManager.open(dir,false)){var ex=assertThrows(IOException.class,store::load);assertTrue(ex.getMessage().contains("invalid header"));}
+    }
+    @Test void failedAtomicReplacementDoesNotAcceptChangeOrDamageExistingData() throws Exception {
+        Path dir=temp.resolve("data");
+        try(var store=FileManager.open(dir,true)) {
+            var manager=new IncidentManager(store,store.load());var teams=new TeamRegistry(manager);teams.register(team());
+            Path target=dir.resolve("teams.csv"), backup=dir.resolve("original-teams.csv");
+            byte[] original=Files.readAllBytes(target);Files.move(target,backup);Files.createDirectory(target);
+            assertThrows(UncheckedIOException.class,()->teams.changeAvailability("T1",false));
+            assertTrue(teams.findTeam("T1").orElseThrow().operationallyAvailable());
+            assertArrayEquals(original,Files.readAllBytes(backup));assertTrue(Files.isDirectory(target));
+            try(var entries=Files.list(dir)){assertTrue(entries.noneMatch(x->x.getFileName().toString().endsWith(".tmp")));}
+        }
+    }
+    @Test void duplicateCloseDoesNotReleaseAnotherInstance() throws Exception {
+        Path dir=temp.resolve("data");var first=FileManager.open(dir,true);first.close();
+        try(var second=FileManager.open(dir,false)) {
+            first.close();
+            assertThrows(IOException.class,()->FileManager.open(dir,false));
+        }
     }
 }
