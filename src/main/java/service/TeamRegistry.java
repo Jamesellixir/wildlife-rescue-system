@@ -16,7 +16,10 @@ public final class TeamRegistry {
 
     public TeamRegistry(IncidentManager incidents) {
         this.incidents = Objects.requireNonNull(incidents);
-        for (var team : incidents.initialTeams()) teams.put(team.id(), team);
+        synchronized (this.incidents) {
+            this.incidents.attachTeamRegistry(this);
+            for (var team : incidents.initialTeams()) teams.put(team.id(), team);
+        }
     }
 
     boolean belongsTo(IncidentManager manager) {

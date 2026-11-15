@@ -38,7 +38,7 @@ public final class ConsoleMenu {
         this.input = input;
         this.output = output;
         this.manager = manager;
-        this.teams = new TeamRegistry(manager);
+        this.teams = manager.teamRegistry();
     }
 
     public void run() {

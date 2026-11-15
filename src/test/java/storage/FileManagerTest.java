@@ -126,4 +126,13 @@ class FileManagerTest {
             assertThrows(IOException.class,()->FileManager.open(dir,false));
         }
     }
+    @Test void rejectsSecondRegistryForSameManager() throws Exception {
+        Path dir=temp.resolve("data");
+        try(var store=FileManager.open(dir,true)) {
+            var manager=new IncidentManager(store,store.load());var teams=new TeamRegistry(manager);teams.register(team());
+            assertThrows(IllegalStateException.class,()->new TeamRegistry(manager));
+            assertSame(teams,manager.teamRegistry());assertSame(teams,manager.teamRegistry());
+            assertEquals(1,store.load().teams().size());assertEquals(1,teams.listTeams().size());
+        }
+    }
 }

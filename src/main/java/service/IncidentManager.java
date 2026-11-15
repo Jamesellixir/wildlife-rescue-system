@@ -21,12 +21,21 @@ public final class IncidentManager {
     private final Map<UUID, RescueIncident> incidents = new LinkedHashMap<>();
     private final FileManager store;
     private final List<RescueTeam> initialTeams;
+    private TeamRegistry teamRegistry;
 
     public IncidentManager() { this.store = null; this.initialTeams = List.of(); }
     public IncidentManager(FileManager store, FileManager.Loaded loaded) {
         this.store = java.util.Objects.requireNonNull(store);
         this.initialTeams = List.copyOf(loaded.teams());
         for (var incident : loaded.incidents()) incidents.put(incident.id(), incident);
+    }
+    synchronized void attachTeamRegistry(TeamRegistry registry) {
+        if (teamRegistry != null) throw new IllegalStateException("This incident manager already has a team registry.");
+        teamRegistry = registry;
+    }
+    public synchronized TeamRegistry teamRegistry() {
+        if (teamRegistry == null) new TeamRegistry(this);
+        return teamRegistry;
     }
     FileManager store() { return store; }
     List<RescueTeam> initialTeams() { return initialTeams; }
