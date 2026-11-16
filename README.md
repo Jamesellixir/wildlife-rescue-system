@@ -30,3 +30,9 @@ On Windows, run `.\mvnw.cmd clean verify`. On macOS or Linux, run `./mvnw clean 
 The build runs the JUnit tests and creates `target/wildlife-rescue-system.jar`. On first use, run `java -jar target/wildlife-rescue-system.jar --init` from the chosen working directory. This creates `data/teams.csv` and `data/incidents.csv`. Use `java -jar target/wildlife-rescue-system.jar` on later runs. The rescue report is displayed in the console and exported to `data/rescue-report.csv`; generating a new report replaces that export. Start only one instance for a data directory. If either data file is missing or damaged, the application reports an error without replacing it.
 
 The console uses numbered menus. Use fictional names and contact details in examples.
+
+## Console menu
+
+Choose 1 to report an incident, 2 to review incidents, 3 to register a team, or 4 to review teams and availability. Choose 5 to find and assign a team, 6 to update rescue progress, 7 to generate a report, or 8 to check pending incidents using two workers. Choose 0 to exit.
+
+Team matching suggests candidates without reserving them. Assignment rechecks suitability and capacity. Completed rescues release a team place.

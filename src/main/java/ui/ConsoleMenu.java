@@ -68,6 +68,7 @@ public final class ConsoleMenu {
                     case "7" -> generateReport();
                     case "8" -> checkPending();
                     case "0" -> {
+                        output.println("Goodbye.");
                         return;
                     }
                     default -> output.println("Choose a number from 0 to 8.");
@@ -176,8 +177,9 @@ public final class ConsoleMenu {
         }
 
         for (RescueIncident incident : incidents) {
-            output.printf("%s | %s | %s | %s%n", incident.id(), label(incident.animal().category()),
-                    incident.location(), label(incident.status()));
+            var priority = new PriorityCalculator().calculate(incident);
+            output.printf("%s | %s | %s | %s | Priority: %s (%d)%n", incident.id(), label(incident.animal().category()),
+                    incident.location(), label(incident.status()), label(priority.level()), priority.score());
         }
         String enteredId = readLine("Incident ID for details (Enter to return)");
         if (enteredId.isEmpty()) {
@@ -217,7 +219,18 @@ public final class ConsoleMenu {
     }
 
     private void findTeams() {
-        String value = readLine("Pending incident ID");
+        var pending = manager.pendingInPriorityOrder();
+        if (pending.isEmpty()) {
+            output.println("No pending incidents.");
+            return;
+        }
+        output.println("Pending incidents (priority order):");
+        for (var incident : pending) {
+            var priority = new PriorityCalculator().calculate(incident);
+            output.printf("%s | %s | %s (%d)%n", incident.id(), incident.location(), label(priority.level()), priority.score());
+        }
+        String value = readLine("Pending incident ID (Enter to return)");
+        if (value.isEmpty()) return;
         UUID id;
         try {
             id = UUID.fromString(value);
@@ -259,7 +272,8 @@ public final class ConsoleMenu {
     }
 
     private void updateStatus() {
-        String value = readLine("Incident ID");
+        String value = readLine("Incident ID (Enter to return)");
+        if (value.isEmpty()) return;
         UUID id;
         try {
             id = UUID.fromString(value);
@@ -272,6 +286,7 @@ public final class ConsoleMenu {
             output.println("No incident found for that ID.");
             return;
         }
+        output.println("Current status: " + label(incident.get().status()));
         output.println("1. In progress");
         output.println("2. Completed");
         int choice = readNumber("New status", 1, 2);
@@ -306,6 +321,9 @@ public final class ConsoleMenu {
                     output.printf("%s | %s | %s | %d of %d places occupied%n", candidate.team().id(),
                             candidate.team().name(), candidate.sameZone() ? "same zone" : "different zone",
                             candidate.activeCount(), candidate.team().capacity());
+                }
+                for (var rejected : outcome.result().rejected()) {
+                    output.printf("%s | not suitable: %s%n", rejected.team().id(), String.join(", ", rejected.reasons()));
                 }
             }
             output.println("Suggestions do not assign or reserve a team.");
