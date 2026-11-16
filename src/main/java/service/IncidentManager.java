@@ -1,6 +1,7 @@
 package service;
 
 import java.time.Instant;
+import java.nio.file.Path;
 import java.util.LinkedHashMap;
 import java.util.ArrayList;
 import java.util.List;
@@ -104,6 +105,11 @@ public final class IncidentManager {
         saveReplacement(updated);
         incidents.put(incidentId, updated);
         return updated;
+    }
+
+    public synchronized Path exportReport(List<List<String>> rows) {
+        if (store == null) throw new IllegalStateException("CSV export needs an open data directory.");
+        return store.exportReport(rows);
     }
 
     public synchronized Optional<RescueIncident> findIncident(UUID id) {

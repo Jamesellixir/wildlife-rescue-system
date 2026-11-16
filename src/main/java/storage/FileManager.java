@@ -149,6 +149,17 @@ public final class FileManager implements AutoCloseable {
             for (var i : incidents) csv.printRecord(i.id(),i.reportedAt(),i.animal().category(),i.animal().condition(),i.animal().count(),i.location(),i.zone(),i.risk(),i.immediateDanger(),enumList(i.requiredSkills()),enumList(i.requiredEquipment()),i.reporterName(),i.reporterContact(),i.status(),i.assignedTeamId()==null?"":i.assignedTeamId());
         });
     }
+    public Path exportReport(List<List<String>> rows) {
+        String[] headers = {"incident_id", "reported_at", "animal_category", "condition", "animal_count",
+                "location", "zone", "priority", "priority_score", "status", "assigned_team_id"};
+        atomicWrite("rescue-report.csv", headers, csv -> {
+            for (var row : rows) {
+                if (row.size() != headers.length) throw new IOException("Invalid report row.");
+                csv.printRecord(row);
+            }
+        });
+        return directory.resolve("rescue-report.csv");
+    }
     @FunctionalInterface private interface Rows { void write(CSVPrinter printer) throws IOException; }
     private void atomicWrite(String filename, String[] headers, Rows rows) {
         Path temp = null;

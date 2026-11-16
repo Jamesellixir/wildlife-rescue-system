@@ -4,7 +4,7 @@ A Java console application for recording wildlife rescue incidents, calculating 
 
 ## Project status
 
-The console supports incident reports, team registration, matching, assignment, progress updates and local CSV storage. Reports and concurrent matching are planned.
+The console supports incident reports, team registration, matching, assignment, progress updates, local CSV storage and rescue reports. Concurrent matching is planned.
 
 ## Planned features
 
@@ -27,6 +27,6 @@ Install a Java 17 JDK and set JAVA_HOME to its installation folder. The Maven Wr
 
 On Windows, run `.\mvnw.cmd clean verify`. On macOS or Linux, run `./mvnw clean verify`.
 
-The build runs the JUnit tests and creates `target/wildlife-rescue-system.jar`. On first use, run `java -jar target/wildlife-rescue-system.jar --init` from the chosen working directory. This creates `data/teams.csv` and `data/incidents.csv`. Use `java -jar target/wildlife-rescue-system.jar` on later runs. Start only one instance for a data directory. If either data file is missing or damaged, the application reports an error without replacing it.
+The build runs the JUnit tests and creates `target/wildlife-rescue-system.jar`. On first use, run `java -jar target/wildlife-rescue-system.jar --init` from the chosen working directory. This creates `data/teams.csv` and `data/incidents.csv`. Use `java -jar target/wildlife-rescue-system.jar` on later runs. The rescue report is displayed in the console and exported to `data/rescue-report.csv`; generating a new report replaces that export. Start only one instance for a data directory. If either data file is missing or damaged, the application reports an error without replacing it.
 
 The console uses numbered menus. Use fictional names and contact details in examples.

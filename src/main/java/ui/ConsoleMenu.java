@@ -26,6 +26,7 @@ import model.Skill;
 import service.IncidentManager;
 import service.TeamRegistry;
 import service.PriorityCalculator;
+import service.RescueReportService;
 import service.TeamMatcher;
 
 public final class ConsoleMenu {
@@ -52,6 +53,7 @@ public final class ConsoleMenu {
                 output.println("4. View teams and change availability");
                 output.println("5. Find suitable teams and assign a team");
                 output.println("6. Update incident status");
+                output.println("7. Generate rescue report");
                 output.println("0. Exit");
                 try {
                 switch (readLine("Choice")) {
@@ -61,10 +63,11 @@ public final class ConsoleMenu {
                     case "4" -> viewTeams();
                     case "5" -> findTeams();
                     case "6" -> updateStatus();
+                    case "7" -> generateReport();
                     case "0" -> {
                         return;
                     }
-                    default -> output.println("Choose a number from 0 to 6.");
+                    default -> output.println("Choose a number from 0 to 7.");
                 }
                 } catch (UncheckedIOException failed) {
                     output.println("Save failed: " + failed.getMessage());
@@ -278,6 +281,24 @@ public final class ConsoleMenu {
             }
         } catch (IllegalStateException invalid) {
             output.println(invalid.getMessage());
+        }
+    }
+
+    private void generateReport() {
+        var incidents = manager.listIncidents();
+        var reports = new RescueReportService();
+        var summary = reports.summarize(incidents);
+        output.println("Rescue report");
+        output.println("Pending: " + summary.count(IncidentStatus.PENDING_ASSIGNMENT));
+        output.println("Assigned: " + summary.count(IncidentStatus.ASSIGNED));
+        output.println("In progress: " + summary.count(IncidentStatus.IN_PROGRESS));
+        output.println("Completed: " + summary.count(IncidentStatus.COMPLETED));
+        output.println("Active: " + summary.active());
+        output.println("Total: " + summary.total());
+        try {
+            output.println("CSV report: " + manager.exportReport(reports.rows(incidents)));
+        } catch (UncheckedIOException | IllegalStateException failed) {
+            output.println("CSV export failed: " + failed.getMessage());
         }
     }
 
