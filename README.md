@@ -4,7 +4,7 @@ A Java console application for recording wildlife rescue incidents, calculating 
 
 ## Project status
 
-The console supports incident reports, team registration, matching, assignment, progress updates, local CSV storage and rescue reports. Concurrent matching is planned.
+The console supports incident reports, team registration, matching, assignment, progress updates, local CSV storage and rescue reports. Concurrent matching checks pending incidents using two workers.
 
 ## Planned features
 
@@ -12,7 +12,7 @@ The console supports incident reports, team registration, matching, assignment, 
 - Register teams and match their skills, equipment, location and available capacity.
 - Track assignments and rescue progress.
 - Load and save CSV data and export rescue reports.
-- Search for teams for multiple incidents using worker threads.
+- Search for teams for multiple pending incidents using worker threads.
 
 ## Documentation
 

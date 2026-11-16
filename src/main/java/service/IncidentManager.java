@@ -69,6 +69,17 @@ public final class IncidentManager {
         return List.copyOf(incidents.values());
     }
 
+    public record MatchingSnapshot(List<RescueIncident> incidents, List<RescueTeam> teams) {
+        public MatchingSnapshot {
+            incidents = List.copyOf(incidents);
+            teams = List.copyOf(teams);
+        }
+    }
+
+    public synchronized MatchingSnapshot matchingSnapshot() {
+        return new MatchingSnapshot(List.copyOf(incidents.values()), teamRegistry().listTeams());
+    }
+
     public synchronized List<RescueIncident> pendingInPriorityOrder() {
         PriorityCalculator calculator = new PriorityCalculator();
         return incidents.values().stream()

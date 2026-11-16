@@ -27,6 +27,7 @@ import service.IncidentManager;
 import service.TeamRegistry;
 import service.PriorityCalculator;
 import service.RescueReportService;
+import service.ConcurrentMatcher;
 import service.TeamMatcher;
 
 public final class ConsoleMenu {
@@ -54,6 +55,7 @@ public final class ConsoleMenu {
                 output.println("5. Find suitable teams and assign a team");
                 output.println("6. Update incident status");
                 output.println("7. Generate rescue report");
+                output.println("8. Check pending incidents concurrently");
                 output.println("0. Exit");
                 try {
                 switch (readLine("Choice")) {
@@ -64,10 +66,11 @@ public final class ConsoleMenu {
                     case "5" -> findTeams();
                     case "6" -> updateStatus();
                     case "7" -> generateReport();
+                    case "8" -> checkPending();
                     case "0" -> {
                         return;
                     }
-                    default -> output.println("Choose a number from 0 to 7.");
+                    default -> output.println("Choose a number from 0 to 8.");
                 }
                 } catch (UncheckedIOException failed) {
                     output.println("Save failed: " + failed.getMessage());
@@ -281,6 +284,33 @@ public final class ConsoleMenu {
             }
         } catch (IllegalStateException invalid) {
             output.println(invalid.getMessage());
+        }
+    }
+
+    private void checkPending() {
+        try {
+            var outcomes = new ConcurrentMatcher().matchPending(manager.matchingSnapshot());
+            if (outcomes.isEmpty()) {
+                output.println("No pending incidents.");
+                return;
+            }
+            for (var outcome : outcomes) {
+                output.printf("Incident %s | worker: %s%n", outcome.incident().id(), outcome.worker());
+                if (outcome.error() != null) {
+                    output.println("Matching failed: " + outcome.error());
+                    continue;
+                }
+                var candidates = outcome.result().candidates();
+                if (candidates.isEmpty()) output.println("No suitable teams found.");
+                for (var candidate : candidates) {
+                    output.printf("%s | %s | %s | %d of %d places occupied%n", candidate.team().id(),
+                            candidate.team().name(), candidate.sameZone() ? "same zone" : "different zone",
+                            candidate.activeCount(), candidate.team().capacity());
+                }
+            }
+            output.println("Suggestions do not assign or reserve a team.");
+        } catch (IllegalStateException failed) {
+            output.println("Concurrent matching failed: " + failed.getMessage());
         }
     }
 
