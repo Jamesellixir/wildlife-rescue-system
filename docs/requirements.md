@@ -2,7 +2,7 @@
 
 Source: CM2601 individual coursework brief, 2026/2027, Urban Wildlife Rescue Coordination System. The brief is retained separately from this public repository.
 
-Status: planned. No requirement is marked implemented or tested yet.
+The application implements the functional workflows below. [Test coverage](testing.md) links each requirement to its checks. The final package and design-to-code review remain pending.
 
 ## Functional requirements
 

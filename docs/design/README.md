@@ -18,7 +18,7 @@ This design follows the [approved project plan](../project-plan.md) and the CM26
 
 ## Traceability
 
-The [requirements matrix](../requirements.md) lists planned acceptance checks. Implementation and test references will be added when the corresponding work is completed.
+The [requirements matrix](../requirements.md) lists acceptance checks. [Test coverage](../testing.md) links the current implementation to its tests. The final design-to-code review remains pending.
 
 | Requirement | Design evidence | Planned check |
 |---|---|---|
